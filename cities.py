@@ -9,14 +9,14 @@ class Cities:
         self.last_char = None
 
     def is_correct_first_char(self, char):
-        return self.last_char is None or char == self.last_char
+        return self.last_char is None or char.lower() == self.last_char.lower()
 
     def is_unused_city(self, city):
-        return city not in self.used_cities
+        return city in self.used_cities
 
     def change_last_char(self, city):
-        bad_letters = ['ы', "й", "ь", "ъ", "ё"]
-        for letter in city[::-1]:
-            if letter not in bad_letters:
-                self.last_char = letter
+        bad_letters = ['ы', "ь", "ё", "ъ", "й"]
+        for char in city[::-1]:
+            if char not in bad_letters:
+                self.last_char = char
                 break

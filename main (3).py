@@ -3,12 +3,12 @@ import time
 from vk_api.longpoll import VkLongPoll, VkEventType
 
 from cities import Cities
+from correct_cities import correct_cities
 
 vk_session = vk_api.VkApi(token="9c866c3df471ae4253fa655196513ce46707471c8427668afcbdc0d0698ebca33c456ecdffc6064ff0612")
 longpoll = VkLongPoll(vk_session)
 
 
-correct_cities = ['Новосибирск', 'Красноярск', 'Курск', 'Кемерово', 'Оренбунг', 'Гамбург']
 players_in_game = []
 active_games = []
 
@@ -33,10 +33,6 @@ def kill_game(game):
     active_games.pop(active_games.index(game))
     players_in_game.remove(user_ids[0])
     players_in_game.remove(user_ids[1])
-
-
-def is_player_step(self, user_id):
-    return user_id == self.user_ids[self.current_step]
 
 
 def main():
@@ -69,31 +65,26 @@ def main():
                 if bad:
                     send_message(event.user_id, 'Сейчас не ваш ход!')
                     continue
+                user1 = event.user_id
+                user2 = igra.user_ids[1 - igra.current_step]
                 if not igra.is_correct_first_char(event.text[0].upper()):
-                    send_message(event.user_id, 'Вы назвали город не на ту букву и проиграли! Игра окончена!')
-                    send_message(igra.user_ids[1 - igra.current_step], 'Вы победили!')
-                    kill_game(igra)
-                city = event.text
-                user1 = igra.user_ids[0]
-                user2 = igra.user_ids[1]
-                if user1 == event.user_id:
-                    user1, user2 = user2, user1
-                if not igra.is_unused_city(city):
-                    send_message(user1, 'Ты проиграл, потому что назвал город который уже был')
+                    send_message(user1, 'Вы назвали город не на ту букву и проиграли! Игра окончена!')
                     send_message(user2, 'Вы победили!')
                     kill_game(igra)
+                    continue
+                city = event.text.capitalize()
+                if city not in correct_cities:
+                    send_message(user1, 'Такого города нет в нашем списке городов!')
+                    send_message(user2, 'Вы победили!')
+                    kill_game(igra)
+                    continue
+                if igra.is_unused_city(city):
+                    send_message(user1, 'Такой город уже назывался. Увы, вы проиграли!')
+                    send_message(user2, 'Вы победили!')
+                    kill_game(igra)
+                    continue
+                igra.used_cities.append(city)
+                igra.change_last_char(city)
+                igra.current_step = 1 - igra.current_step
+                send_message(user2, 'Ваш ход! Оппонент назвал город: ' + city + '.\nВам на букву: ' + igra.last_char)
 
-def do_step(user_id, city):
-    for game in active_games:
-        if user_id in game_user_ids:
-            game.current_step = 1 - game.current_step
-            game.change_last_char(city)
-            game.used_cities.append(city.lower())
-            break
-
-do_step(user_id, city)
-send_message(user2, f'твой ход. Ходишь на букву: {igra.last_char}\n'
-                    f'был назван город: {igra.used_cities[-1]}')
-
-
-main()
